@@ -1,1 +1,4 @@
-openai-whisper
+assemblyai
+python-dotenv
+streamlit       
+

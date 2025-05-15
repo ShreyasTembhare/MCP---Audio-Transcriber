@@ -1,81 +1,83 @@
 # MCP Audio Transcriber
 
-A portable, Dockerized Python tool that implements a **Model Context Protocol (MCP)** for audio transcription using OpenAI's Whisper models—and even ships with a Streamlit-powered web UI so you can upload an audio file and download the transcription as JSON.
+A Dockerized Python tool that implements the Model Context Protocol (MCP) via AssemblyAI's API. Upload or point to an audio file, and receive a structured JSON transcription.
 
-## 🚀 Features
+## Features
 
-- **Modular MCP interface** (`mcp.py`) that defines a standard `ModelContextProtocol`.
-- **Whisper-based implementation** (`WhisperMCP`) for high-quality, multi-language transcription.
-- **Command-line interface** (`app.py`) for batch or ad-hoc transcription:
+- **AssemblyMCP**: a concrete MCP implementation that uses AssemblyAI's REST API  
+- **Command-line interface** (`app.py`):  
   ```bash
-  python app.py <input_audio> <output_json> [--model MODEL_NAME]
+  python app.py <input_audio> <output_json>
   ```
-- **Docker support** for a consistent runtime:
-  ```bash
-  docker build -t mcp-transcriber .
-  docker run --rm \
-    -v /full/path/to/data:/data \
-    mcp-transcriber:latest \
-    /data/input.wav /data/output.json
-  ```
-- **Streamlit web app** (`streamlit_app.py`) letting end users:
-  - Upload any common audio file (.wav, .mp3, .ogg, .m4a)
-  - Choose a Whisper model size
-  - Preview the transcription live
-  - Download the JSON result with one click
+- **Streamlit web UI** (`streamlit_app.py`):
+  - Upload local files or paste URLs
+  - Click Transcribe
+  - Preview transcript and download JSON
+- **Docker support** for environment consistency and portability
 
-## 📦 Prerequisites
+## Prerequisites
 
 - Python 3.10+
-- ffmpeg installed & on your PATH
-- (Optional) Docker Engine / Docker Desktop
-- (Optional) Streamlit
+- An AssemblyAI API key
+- ffmpeg (for local decoding, if using local files)
+- (Optional) Docker Desktop / Engine
+- (Optional) Streamlit (`pip install streamlit`)
 
 ## 🔧 Installation
 
-1. **Clone the repo**
+1. Clone the repo
    ```bash
    git clone https://github.com/ShreyasTembhare/MCP---Audio-Transcriber.git
    cd MCP---Audio-Transcriber
    ```
 
-2. **Python dependencies & FFmpeg**
+2. Create a `.env`
+   ```
+   ASSEMBLYAI_API_KEY=your_assemblyai_api_key_here
+   ```
+
+3. Ensure `.gitignore` contains:
+   ```gitignore
+   .env
+   ```
+
+4. Install Python dependencies
    ```bash
    pip install --upgrade pip
    pip install -r requirements.txt
-   # On Ubuntu/Debian:
-   sudo apt update && sudo apt install ffmpeg
-   # On Windows:
-   #   Download a static build from https://ffmpeg.org and add its bin/ to your PATH
    ```
 
-3. **(Optional) Docker**
-   - Install Docker Desktop
-   - Enable WSL integration if using WSL2.
+5. Install ffmpeg
+   - Ubuntu/Debian: `sudo apt update && sudo apt install ffmpeg -y`
+   - Windows: download from https://ffmpeg.org and add its `bin/` to your PATH
 
-4. **(Optional) Streamlit**
-   ```bash
-   pip install streamlit
-   ```
-
-## 🎯 Usage
+## Usage
 
 ### 1. CLI Transcription
 
 ```bash
-python app.py <input_audio> <output_json> [--model tiny|base|small|medium|large]
+python app.py <input_audio> <output_json>
 ```
-- `<input_audio>`: path to your audio file
-- `<output_json>`: path where the JSON result will be saved
-- `--model`: choose Whisper model size (default: base)
+- `<input_audio>`: any file or URL supported by AssemblyAI
+- `<output_json>`: path for the generated JSON
 
 Example:
 ```bash
-python app.py data/input.ogg data/output.json --model tiny
+python app.py data/input.ogg data/output.json
 cat data/output.json
 ```
 
-### 2. Docker
+### 2. Streamlit Web UI
+
+```bash
+streamlit run streamlit_app.py
+```
+- Open http://localhost:8501
+- Upload or enter an audio URL
+- Click Transcribe
+- Download the JSON result
+
+### 3. Docker
 
 Build the image:
 ```bash
@@ -85,9 +87,10 @@ docker build -t mcp-transcriber .
 Run it (mounting your data/ folder):
 ```bash
 docker run --rm \
-  -v "/full/path/to/your/project/data:/data" \
+  -e ASSEMBLYAI_API_KEY="$ASSEMBLYAI_API_KEY" \
+  -v "$(pwd)/data:/data" \
   mcp-transcriber:latest \
-  /data/input.wav /data/output.json
+  /data/input.ogg /data/output.json
 ```
 
 Then inspect:
@@ -96,29 +99,25 @@ ls data/output.json
 cat data/output.json
 ```
 
-### 3. Streamlit Web UI
-
-Launch the app:
-```bash
-streamlit run streamlit_app.py
+Windows PowerShell:
+```powershell
+docker run --rm `
+  -e ASSEMBLYAI_API_KEY=$env:ASSEMBLYAI_API_KEY `
+  -v "${PWD}\data:/data" `
+  mcp-transcriber:latest `
+  /data/input.ogg /data/output.json
 ```
 
-- Open http://localhost:8501 in your browser
-- Upload an audio file
-- Select the Whisper model size
-- Click Transcribe
-- Preview & download the resulting JSON
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 MCP-Audio-Transcriber/
-├── app.py               # CLI entrypoint
-├── mcp.py               # Model Context Protocol + WhisperMCP
-├── requirements.txt     # Python dependencies
+├── app.py               # CLI entrypoint (AssemblyMCP only)
+├── mcp.py               # ModelContextProtocol + AssemblyMCP
 ├── streamlit_app.py     # Streamlit interface
-├── Dockerfile           # Container definition
-├── .gitignore           # ignore **pycache**, venvs, etc.
+├── requirements.txt     # assemblyai, python-dotenv, streamlit, etc.
+├── Dockerfile           # builds the container
+├── .gitignore           # ignores .env, __pycache__, etc.
 ├── LICENSE              # MIT license
 └── data/                # sample input and output
     ├── input.ogg
